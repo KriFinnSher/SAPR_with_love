@@ -1,4 +1,5 @@
 import tkinter as tk
+import validators
 
 
 class SaprApp:
@@ -9,6 +10,12 @@ class SaprApp:
 
         self.root.geometry("1140x570")
         self.root.resizable(False, False)
+
+        self.node_check = (self.root.register(validators.natural_positive_number), '%P')
+        self.bar_node_check = (self.root.register(validators.natural_positive_number), '%P')
+        self.bar_a_check = (self.root.register(validators.rational_positive_number), '%P')
+        self.bar_e_check = (self.root.register(validators.rational_positive_number), '%P')
+        self.bar_max_load_check = (self.root.register(validators.rational_positive_number), '%P')
 
         self.nodes_frame = tk.LabelFrame(root, bd=2, relief="groove", text="Добавление узлов")
         self.bars_frame = tk.LabelFrame(root, bd=2, relief="groove", text="Добавление стержней")
@@ -79,7 +86,7 @@ class SaprApp:
         node_label = tk.Label(frame, text=f"Узел {index + 1}:")
         node_label.grid(row=0, column=0, padx=5, sticky="w")
 
-        node_entry = tk.Entry(frame, width=3)
+        node_entry = tk.Entry(frame, width=3, validate='all', validatecommand=self.node_check)
         node_entry.grid(row=0, column=1, padx=5)
 
         add_button = tk.Button(frame, text="+", command=lambda: self.add_node_row(frame), width=2)
@@ -142,16 +149,16 @@ class SaprApp:
         bar_label = tk.Label(frame, text=f"Стержень {row_index}:")
         bar_label.grid(row=0, column=0, padx=5)
 
-        bar_entry1 = tk.Entry(frame, width=5)
-        bar_entry1.grid(row=0, column=1, padx=20)
-        bar_entry2 = tk.Entry(frame, width=5)
-        bar_entry2.grid(row=0, column=2, padx=20)
-        bar_entry3 = tk.Entry(frame, width=5)
-        bar_entry3.grid(row=0, column=3, padx=20)
-        bar_entry4 = tk.Entry(frame, width=5)
-        bar_entry4.grid(row=0, column=4, padx=20)
-        bar_entry5 = tk.Entry(frame, width=5)
-        bar_entry5.grid(row=0, column=5, padx=20)
+        first_node = tk.Entry(frame, width=5, validate='all', validatecommand=self.bar_node_check)
+        first_node.grid(row=0, column=1, padx=20)
+        second_node = tk.Entry(frame, width=5, validate='all', validatecommand=self.bar_node_check)
+        second_node.grid(row=0, column=2, padx=20)
+        a = tk.Entry(frame, width=5, validate='all', validatecommand=self.bar_a_check)
+        a.grid(row=0, column=3, padx=20)
+        e = tk.Entry(frame, width=5, validate='all', validatecommand=self.bar_e_check)
+        e.grid(row=0, column=4, padx=20)
+        max_load = tk.Entry(frame, width=5, validate='all', validatecommand=self.bar_max_load_check)
+        max_load.grid(row=0, column=5, padx=20)
 
         add_button = tk.Button(frame, text="+", command=lambda: self.add_bar_row(frame), width=2)
         add_button.grid(row=0, column=6)
@@ -173,16 +180,16 @@ class SaprApp:
         bar_label = tk.Label(frame, text=f"Стержень {index + 1}:")
         bar_label.grid(row=0, column=0, padx=5)
 
-        bar_entry1 = tk.Entry(frame, width=5)
-        bar_entry1.grid(row=0, column=1, padx=20)
-        bar_entry2 = tk.Entry(frame, width=5)
-        bar_entry2.grid(row=0, column=2, padx=20)
-        bar_entry3 = tk.Entry(frame, width=5)
-        bar_entry3.grid(row=0, column=3, padx=20)
-        bar_entry4 = tk.Entry(frame, width=5)
-        bar_entry4.grid(row=0, column=4, padx=20)
-        bar_entry5 = tk.Entry(frame, width=5)
-        bar_entry5.grid(row=0, column=5, padx=20)
+        first_node = tk.Entry(frame, width=5, validate='all', validatecommand=self.bar_node_check)
+        first_node.grid(row=0, column=1, padx=20)
+        second_node = tk.Entry(frame, width=5, validate='all', validatecommand=self.bar_node_check)
+        second_node.grid(row=0, column=2, padx=20)
+        a = tk.Entry(frame, width=5, validate='all', validatecommand=self.bar_a_check)
+        a.grid(row=0, column=3, padx=20)
+        e = tk.Entry(frame, width=5, validate='all', validatecommand=self.bar_e_check)
+        e.grid(row=0, column=4, padx=20)
+        max_load = tk.Entry(frame, width=5, validate='all', validatecommand=self.bar_max_load_check)
+        max_load.grid(row=0, column=5, padx=20)
 
         add_button = tk.Button(frame, text="+", command=lambda: self.add_bar_row(frame), width=2)
         add_button.grid(row=0, column=6)
@@ -398,16 +405,12 @@ class SaprApp:
         right_zadelka = tk.Checkbutton(self.preview_frame, variable=self.right_zad, text="справа", command=lambda: self.on_check("cb2"))
         right_zadelka.grid(row=0, column=5, sticky='e', padx=10)
 
-
-
     def on_check(self, sender_widget):
         if not self.left_zad.get() and not self.right_zad.get():
             if sender_widget == 'cb1':
                 self.right_zad.set(1)
             elif sender_widget == 'cb2':
                 self.left_zad.set(1)
-
-
 
     def initialize_postprocess_section(self):
 
