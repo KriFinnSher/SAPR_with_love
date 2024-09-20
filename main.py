@@ -16,6 +16,7 @@ class SaprApp:
         self.bar_a_check = (self.root.register(validators.rational_positive_number), '%P')
         self.bar_e_check = (self.root.register(validators.rational_positive_number), '%P')
         self.bar_max_load_check = (self.root.register(validators.rational_positive_number), '%P')
+        self.loads_check = (self.root.register(validators.rational_number), '%P')
 
         self.nodes_frame = tk.LabelFrame(root, bd=2, relief="groove", text="Добавление узлов")
         self.bars_frame = tk.LabelFrame(root, bd=2, relief="groove", text="Добавление стержней")
@@ -267,11 +268,11 @@ class SaprApp:
         row_frame = tk.Frame(self.scrollable_conc_frame)
         row_frame.grid(row=row_index, column=0, columnspan=4, pady=2)
 
-        entry = tk.Entry(row_frame, width=5)
-        entry.grid(row=0, column=0, padx=15)
+        node_num = tk.Entry(row_frame, width=5, validate='all', validatecommand=self.node_check)
+        node_num.grid(row=0, column=0, padx=15)
 
-        entry1 = tk.Entry(row_frame, width=5)
-        entry1.grid(row=0, column=1, padx=15)
+        conc_load = tk.Entry(row_frame, width=5, validate='all', validatecommand=self.loads_check)
+        conc_load.grid(row=0, column=1, padx=15)
 
         add_button = tk.Button(row_frame, text="+", command=lambda: self.add_conc_load_row(row_frame), width=2)
         add_button.grid(row=0, column=2)
@@ -290,11 +291,11 @@ class SaprApp:
         row_frame = tk.Frame(self.scrollable_conc_frame)
         row_frame.grid(row=index + 1, column=0, columnspan=4, pady=2)
 
-        entry = tk.Entry(row_frame, width=5)
-        entry.grid(row=0, column=0, padx=15)
+        node_num = tk.Entry(row_frame, width=5, validate='all', validatecommand=self.node_check)
+        node_num.grid(row=0, column=0, padx=15)
 
-        entry1 = tk.Entry(row_frame, width=5)
-        entry1.grid(row=0, column=1, padx=15)
+        conc_load = tk.Entry(row_frame, width=5, validate='all', validatecommand=self.loads_check)
+        conc_load.grid(row=0, column=1, padx=15)
 
         add_button = tk.Button(row_frame, text="+", command=lambda: self.add_conc_load_row(row_frame), width=2)
         add_button.grid(row=0, column=2)
@@ -329,11 +330,11 @@ class SaprApp:
         row_frame = tk.Frame(self.scrollable_dist_frame)
         row_frame.grid(row=row_index, column=0, columnspan=4, pady=2)
 
-        entry = tk.Entry(row_frame, width=5)
-        entry.grid(row=0, column=0, padx=15)
+        bar_num = tk.Entry(row_frame, width=5, validate='all', validatecommand=self.node_check)
+        bar_num.grid(row=0, column=0, padx=15)
 
-        entry1 = tk.Entry(row_frame, width=5)
-        entry1.grid(row=0, column=1, padx=15)
+        dist_load = tk.Entry(row_frame, width=5, validate='all', validatecommand=self.loads_check)
+        dist_load.grid(row=0, column=1, padx=15)
 
         add_button = tk.Button(row_frame, text="+", command=lambda: self.add_dist_load_row(row_frame), width=2)
         add_button.grid(row=0, column=2)
@@ -352,11 +353,11 @@ class SaprApp:
         row_frame = tk.Frame(self.scrollable_dist_frame)
         row_frame.grid(row=index + 1, column=0, columnspan=4, pady=2)
 
-        entry = tk.Entry(row_frame, width=5)
-        entry.grid(row=0, column=0, padx=15)
+        bar_num = tk.Entry(row_frame, width=5, validate='all', validatecommand=self.node_check)
+        bar_num.grid(row=0, column=0, padx=15)
 
-        entry1 = tk.Entry(row_frame, width=5)
-        entry1.grid(row=0, column=1, padx=15)
+        dist_load = tk.Entry(row_frame, width=5, validate='all', validatecommand=self.loads_check)
+        dist_load.grid(row=0, column=1, padx=15)
 
         add_button = tk.Button(row_frame, text="+", command=lambda: self.add_dist_load_row(row_frame), width=2)
         add_button.grid(row=0, column=2)
