@@ -1,2 +1,8 @@
 /test.py
 /tests.py
+
+venv/
+.env/
+
+.idea/
+__pycache__/
