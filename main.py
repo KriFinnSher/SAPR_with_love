@@ -5,29 +5,18 @@ from collections import defaultdict
 import json
 
 
-def open_file():
-    file_path = filedialog.askopenfilename(
-        filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
-        title="Открыть файл JSON"
-    )
-
-    if file_path:
-        with open(file_path, 'r') as file:
-            data = json.load(file)
-            print(data)
-            return data
-
-
 class SaprApp:
 
     def __init__(self, root):
         self.root = root
         self.root.title("SAPR with love")
+        root.option_add('*tearOff', 0)
 
         self.root.geometry("1140x570")
         self.root.resizable(False, False)
 
         self.user_input = defaultdict(list)
+        self.last_files = []
 
         self.node_check = (self.root.register(validators.natural_positive_number), '%P')
         self.bar_node_check = (self.root.register(validators.natural_positive_number), '%P')
@@ -53,6 +42,78 @@ class SaprApp:
         self.initialize_loads_section()
         self.initialize_preview_section()
         self.initialize_postprocess_section()
+        self.initialize_menu_section()
+
+    def close(self):
+        self.root.destroy()
+
+    def open_file(self):
+        file_path = filedialog.askopenfilename(
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+            title="Открытие файла"
+        )
+
+        if file_path:
+            self.last_files.append(file_path)
+            self.update_last_files()
+            with open(file_path, 'r') as file:
+                data = json.load(file)
+                print(data)
+                return data
+
+    def save_file(self):
+        self.get_node_entries()
+        self.get_bar_entries()
+        self.get_conc_load_entries()
+        self.get_dist_load_entries()
+
+        file_path = tk.filedialog.asksaveasfilename(
+            defaultextension=".json",
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+            title="Сохранение файла"
+        )
+
+        if file_path:
+            data = self.user_input
+            with open(file_path, 'w') as file:
+                json.dump(data, file, ensure_ascii=False, indent=4)
+            print(f"Файл сохранён: {file_path}")
+
+    def initialize_menu_section(self):
+        self.menubar = tk.Menu(self.root)
+        self.root["menu"] = self.menubar
+
+        self.menu_file = tk.Menu(self.menubar, tearoff=0)
+        self.menu_faq = tk.Menu(self.menubar, tearoff=0)
+        self.menu_last_files = tk.Menu(self.menu_file, tearoff=0)
+
+        self.menubar.add_cascade(menu=self.menu_file, label="Файл")
+        self.menubar.add_cascade(menu=self.menu_faq, label="Справка")
+        self.menu_file.add_cascade(menu=self.menu_last_files, label="Последние файлы")
+
+        self.menu_file.add_command(label="Открыть", command=self.open_file)
+        self.menu_file.add_command(label="Сохранить", command=self.save_file)
+        self.menu_file.add_command(label="Сбросить ввод", command=self.reset_input)
+        self.menu_file.add_command(label="Выход", command=self.close)
+
+        self.update_last_files()
+
+    def update_last_files(self):
+        self.menu_last_files.delete(0, tk.END)
+        for file in self.last_files[-5:]:
+            self.menu_last_files.add_command(label=file, command=lambda f=file: self.load_last_file(f))
+
+    def load_last_file(self, file_path):
+        with open(file_path, 'r') as file:
+            data = json.load(file)
+            print(data)
+            return data
+
+    def reset_input(self):
+        self.reset_node_entries()
+        self.reset_bar_entries()
+        self.reset_conc_load_entries()
+        self.reset_dist_load_entries()
 
     def initialize_nodes_section(self):
         canvas = tk.Canvas(self.nodes_frame, width=140, height=150)
@@ -144,6 +205,13 @@ class SaprApp:
             node_val = node_entry.get()
             node_vals.append(node_val)
         self.user_input["nodes"] = node_vals
+
+    def reset_node_entries(self):
+        for frame, label in self.node_entries:
+            frame.grid_forget()
+        self.node_entries.clear()
+        self.create_node_row()
+        self.refresh_node_grid()
 
     def initialize_bars_section(self):
         canvas = tk.Canvas(self.bars_frame, width=500, height=150)
@@ -276,6 +344,13 @@ class SaprApp:
             bar_vals.append(data)
         self.user_input["bars"] = bar_vals
 
+    def reset_bar_entries(self):
+        for frame, label in self.bar_entries:
+            frame.grid_forget()
+        self.bar_entries.clear()
+        self.create_bar_row()
+        self.refresh_bar_grid()
+
     def initialize_loads_section(self):
         self.conc_load = tk.LabelFrame(self.loads_frame, bd=2, relief="groove", text="Сосредоточенные")
         self.conc_load.grid(row=0, column=0, columnspan=4, sticky='wn')
@@ -401,6 +476,13 @@ class SaprApp:
             conc_load_vals.append(data)
         self.user_input["conc_loads"] = conc_load_vals
 
+    def reset_conc_load_entries(self):
+        for frame in self.conc_load_entries:
+            frame.grid_forget()
+        self.conc_load_entries.clear()
+        self.create_conc_load_row()
+        self.refresh_conc_load_grid()
+
     def create_dist_load_row(self):
         row_index = len(self.dist_load_entries) + 1
 
@@ -483,6 +565,13 @@ class SaprApp:
             dist_load_vals.append(data)
         self.user_input["dist_loads"] = dist_load_vals
 
+    def reset_dist_load_entries(self):
+        for frame in self.dist_load_entries:
+            frame.grid_forget()
+        self.dist_load_entries.clear()
+        self.create_dist_load_row()
+        self.refresh_dist_load_grid()
+
     def initialize_preview_section(self):
         preview_label = tk.Label(self.preview_frame, text="здесь должна быть схема", width=97, height=20, bg="white", bd=1,
                                       relief="sunken")
@@ -525,24 +614,6 @@ class SaprApp:
 
         generate_file_button = tk.Button(self.postprocess_frame, text="Сформировать файл", width=30)
         generate_file_button.pack(pady=15)
-
-    def save_file(self):
-        self.get_node_entries()
-        self.get_bar_entries()
-        self.get_conc_load_entries()
-        self.get_dist_load_entries()
-
-        file_path = tk.filedialog.asksaveasfilename(
-            defaultextension=".json",
-            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
-            title="Сохранение файла"
-        )
-
-        if file_path:
-            data = self.user_input
-            with open(file_path, 'w') as file:
-                json.dump(data, file, ensure_ascii=False, indent=4)
-            print(f"Файл сохранён: {file_path}")
 
 
 if __name__ == "__main__":
