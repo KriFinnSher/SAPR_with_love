@@ -1,5 +1,21 @@
 import tkinter as tk
+from tkinter import filedialog
 import validators
+from collections import defaultdict
+import json
+
+
+def open_file():
+    file_path = filedialog.askopenfilename(
+        filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+        title="Открыть файл JSON"
+    )
+
+    if file_path:
+        with open(file_path, 'r') as file:
+            data = json.load(file)
+            print(data)
+            return data
 
 
 class SaprApp:
@@ -10,6 +26,8 @@ class SaprApp:
 
         self.root.geometry("1140x570")
         self.root.resizable(False, False)
+
+        self.user_input = defaultdict(list)
 
         self.node_check = (self.root.register(validators.natural_positive_number), '%P')
         self.bar_node_check = (self.root.register(validators.natural_positive_number), '%P')
@@ -119,6 +137,14 @@ class SaprApp:
                 return idx
         return -1
 
+    def get_node_entries(self):
+        node_vals = []
+        for frame, label in self.node_entries:
+            node_entry = frame.grid_slaves(row=0, column=1)[0]
+            node_val = node_entry.get()
+            node_vals.append(node_val)
+        self.user_input["nodes"] = node_vals
+
     def initialize_bars_section(self):
         canvas = tk.Canvas(self.bars_frame, width=500, height=150)
         canvas.grid(row=0, column=0, columnspan=8, sticky='nsew')
@@ -139,6 +165,7 @@ class SaprApp:
                                                  "E, Па              "
                                                  "[σ], Па").grid(row=0, column=2, sticky='ew')
         self.bar_entries = []
+        self.bar_input_data = []
         self.create_bar_row()
 
     def create_bar_row(self):
@@ -168,6 +195,13 @@ class SaprApp:
         remove_button.grid(row=0, column=7)
 
         self.bar_entries.append((frame, bar_label))
+        self.bar_input_data.append({
+            'first_node': first_node,
+            'second_node': second_node,
+            'a': a,
+            'e': e,
+            'max_load': max_load
+        })
         self.refresh_bar_grid()
 
     def add_bar_row(self, row_frame):
@@ -199,6 +233,13 @@ class SaprApp:
         remove_button.grid(row=0, column=7)
 
         self.bar_entries.insert(index, (frame, bar_label))
+        self.bar_input_data.append({
+            'first_node': first_node,
+            'second_node': second_node,
+            'a': a,
+            'e': e,
+            'max_load': max_load
+        })
         self.refresh_bar_grid()
 
     def delete_bar_row(self, row_frame):
@@ -206,6 +247,7 @@ class SaprApp:
             return
 
         index = self.get_bar_row_index(row_frame)
+        self.bar_input_data.pop(index)
         self.bar_entries[index][0].grid_forget()
         self.bar_entries.pop(index)
         self.refresh_bar_grid()
@@ -220,6 +262,19 @@ class SaprApp:
             if frame == row_frame:
                 return idx
         return -1
+
+    def get_bar_entries(self):
+        bar_vals = []
+        for entry_dict in self.bar_input_data:
+            data = {
+                'first_node': entry_dict['first_node'].get(),
+                'second_node': entry_dict['second_node'].get(),
+                'a': entry_dict['a'].get(),
+                'e': entry_dict['e'].get(),
+                'max_load': entry_dict['max_load'].get(),
+            }
+            bar_vals.append(data)
+        self.user_input["bars"] = bar_vals
 
     def initialize_loads_section(self):
         self.conc_load = tk.LabelFrame(self.loads_frame, bd=2, relief="groove", text="Сосредоточенные")
@@ -257,9 +312,11 @@ class SaprApp:
         tk.Label(self.scrollable_dist_frame, text="значение").grid(row=0, column=1, sticky='w')
 
         self.conc_load_entries = []
+        self.conc_load_input_data = []
         self.create_conc_load_row()
 
         self.dist_load_entries = []
+        self.dist_load_input_data = []
         self.create_dist_load_row()
 
     def create_conc_load_row(self):
@@ -281,6 +338,10 @@ class SaprApp:
         delete_button.grid(row=0, column=3)
 
         self.conc_load_entries.append(row_frame)
+        self.conc_load_input_data.append({
+            "node_num": node_num,
+            "conc_load": conc_load
+        })
         self.refresh_conc_load_grid()
 
     def add_conc_load_row(self, row_frame):
@@ -304,14 +365,20 @@ class SaprApp:
         delete_button.grid(row=0, column=3)
 
         self.conc_load_entries.insert(index, row_frame)
+        self.conc_load_input_data.append({
+            "node_num": node_num,
+            "conc_load": conc_load
+        })
         self.refresh_conc_load_grid()
 
     def delete_conc_load_row(self, row_frame):
         if len(self.conc_load_entries) == 1:
             return
 
-        row_frame.grid_forget()
-        self.conc_load_entries.remove(row_frame)
+        index = self.get_conc_load_row_index(row_frame)
+        self.conc_load_input_data.pop(index)
+        self.conc_load_entries[index].grid_forget()
+        self.conc_load_entries.pop(index)
         self.refresh_conc_load_grid()
 
     def refresh_conc_load_grid(self):
@@ -323,6 +390,16 @@ class SaprApp:
             if frame == row_frame:
                 return idx
         return -1
+
+    def get_conc_load_entries(self):
+        conc_load_vals = []
+        for entry_dict in self.conc_load_input_data:
+            data = {
+                "node_num": entry_dict["node_num"].get(),
+                "conc_load": entry_dict["conc_load"].get()
+            }
+            conc_load_vals.append(data)
+        self.user_input["conc_loads"] = conc_load_vals
 
     def create_dist_load_row(self):
         row_index = len(self.dist_load_entries) + 1
@@ -343,6 +420,10 @@ class SaprApp:
         delete_button.grid(row=0, column=3)
 
         self.dist_load_entries.append(row_frame)
+        self.dist_load_input_data.append({
+            "bar_num": bar_num,
+            "dist_load": dist_load
+        })
         self.refresh_dist_load_grid()
 
     def add_dist_load_row(self, row_frame):
@@ -366,14 +447,20 @@ class SaprApp:
         delete_button.grid(row=0, column=3)
 
         self.dist_load_entries.insert(index, row_frame)
+        self.dist_load_input_data.append({
+            "bar_num": bar_num,
+            "dist_load": dist_load
+        })
         self.refresh_dist_load_grid()
 
     def delete_dist_load_row(self, row_frame):
         if len(self.dist_load_entries) == 1:
             return
 
-        row_frame.grid_forget()
-        self.dist_load_entries.remove(row_frame)
+        index = self.get_dist_load_row_index(row_frame)
+        self.dist_load_input_data.pop(index)
+        self.dist_load_entries[index].grid_forget()
+        self.dist_load_entries.pop(index)
         self.refresh_dist_load_grid()
 
     def refresh_dist_load_grid(self):
@@ -385,6 +472,16 @@ class SaprApp:
             if frame == row_frame:
                 return idx
         return -1
+
+    def get_dist_load_entries(self):
+        dist_load_vals = []
+        for entry_dict in self.dist_load_input_data:
+            data = {
+                "bar_num": entry_dict["bar_num"].get(),
+                "dist_load": entry_dict["dist_load"].get()
+            }
+            dist_load_vals.append(data)
+        self.user_input["dist_loads"] = dist_load_vals
 
     def initialize_preview_section(self):
         preview_label = tk.Label(self.preview_frame, text="здесь должна быть схема", width=97, height=20, bg="white", bd=1,
@@ -414,15 +511,38 @@ class SaprApp:
                 self.left_zad.set(1)
 
     def initialize_postprocess_section(self):
+        build_tables_button = tk.Button(self.postprocess_frame, text="Построение таблиц", width=30)
+        build_tables_button.pack(pady=15)
 
-        buttons = [
-            "Построение таблиц", "Построение графиков", "Построение эпюр",
-            "Анализ сечения", "Сформировать файл"
-        ]
+        build_graphs_button = tk.Button(self.postprocess_frame, text="Построение графиков", width=30)
+        build_graphs_button.pack(pady=15)
 
-        for btn_text in buttons:
-            button = tk.Button(self.postprocess_frame, text=btn_text, width=30)
-            button.pack(pady=15)
+        build_diagrams_button = tk.Button(self.postprocess_frame, text="Построение эпюр", width=30)
+        build_diagrams_button.pack(pady=15)
+
+        section_analysis_button = tk.Button(self.postprocess_frame, text="Анализ сечения", width=30)
+        section_analysis_button.pack(pady=15)
+
+        generate_file_button = tk.Button(self.postprocess_frame, text="Сформировать файл", width=30)
+        generate_file_button.pack(pady=15)
+
+    def save_file(self):
+        self.get_node_entries()
+        self.get_bar_entries()
+        self.get_conc_load_entries()
+        self.get_dist_load_entries()
+
+        file_path = tk.filedialog.asksaveasfilename(
+            defaultextension=".json",
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+            title="Сохранение файла"
+        )
+
+        if file_path:
+            data = self.user_input
+            with open(file_path, 'w') as file:
+                json.dump(data, file, ensure_ascii=False, indent=4)
+            print(f"Файл сохранён: {file_path}")
 
 
 if __name__ == "__main__":
