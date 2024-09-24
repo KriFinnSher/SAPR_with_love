@@ -58,8 +58,16 @@ class SaprApp:
             self.update_last_files()
             with open(file_path, 'r') as file:
                 data = json.load(file)
-                print(data)
-                return data
+
+            self.user_input = data
+            self.reset_input()
+
+            self.fill_nodes()
+            self.fill_bars()
+            self.fill_conc_load()
+            self.fill_dist_load()
+
+
 
     def save_file(self):
         self.get_node_entries()
@@ -149,7 +157,7 @@ class SaprApp:
         add_button = tk.Button(frame, text="+", command=lambda: self.add_node_row(frame), width=2)
         add_button.grid(row=0, column=2)
 
-        remove_button = tk.Button(frame, text="-", command=lambda: self.delete_node_row(frame), width=2)
+        remove_button = tk.Button(frame, text="-", width=2)
         remove_button.grid(row=0, column=3)
 
         self.node_entries.append((frame, node_label))
@@ -159,7 +167,7 @@ class SaprApp:
         index = self.get_node_row_index(row_frame)
         self.create_node_row_at_index(index + 1)
 
-    def create_node_row_at_index(self, index):
+    def create_node_row_at_index(self, index, node_val=None):
         frame = tk.Frame(self.scrollable_frame)
         frame.grid(row=index + 1, column=0, columnspan=4, pady=2, sticky="ew")
 
@@ -169,6 +177,9 @@ class SaprApp:
         node_entry = tk.Entry(frame, width=3, validate='all', validatecommand=self.node_check)
         node_entry.grid(row=0, column=1, padx=5)
 
+        if node_val is not None:
+            node_entry.insert(0, node_val)
+
         add_button = tk.Button(frame, text="+", command=lambda: self.add_node_row(frame), width=2)
         add_button.grid(row=0, column=2)
 
@@ -177,6 +188,10 @@ class SaprApp:
 
         self.node_entries.insert(index, (frame, node_label))
         self.refresh_node_grid()
+
+    def fill_nodes(self):
+        for idx, node in enumerate(self.user_input["nodes"][1:], start=1):
+            self.create_node_row_at_index(idx+1, node)
 
     def delete_node_row(self, row_frame):
         if len(self.node_entries) == 1:
@@ -239,30 +254,30 @@ class SaprApp:
     def create_bar_row(self):
         row_index = len(self.bar_entries) + 1
 
-        frame = tk.Frame(self.scrollable_bar_frame)
-        frame.grid(row=row_index, column=0, columnspan=8, pady=2, sticky="ew")
+        self.first_bar_frame = tk.Frame(self.scrollable_bar_frame)
+        self.first_bar_frame.grid(row=row_index, column=0, columnspan=8, pady=2, sticky="ew")
 
-        bar_label = tk.Label(frame, text=f"Стержень {row_index}:")
+        bar_label = tk.Label(self.first_bar_frame, text=f"Стержень {row_index}:")
         bar_label.grid(row=0, column=0, padx=5)
 
-        first_node = tk.Entry(frame, width=5, validate='all', validatecommand=self.bar_node_check)
+        first_node = tk.Entry(self.first_bar_frame, width=5, validate='all', validatecommand=self.bar_node_check)
         first_node.grid(row=0, column=1, padx=20)
-        second_node = tk.Entry(frame, width=5, validate='all', validatecommand=self.bar_node_check)
+        second_node = tk.Entry(self.first_bar_frame, width=5, validate='all', validatecommand=self.bar_node_check)
         second_node.grid(row=0, column=2, padx=20)
-        a = tk.Entry(frame, width=5, validate='all', validatecommand=self.bar_a_check)
+        a = tk.Entry(self.first_bar_frame, width=5, validate='all', validatecommand=self.bar_a_check)
         a.grid(row=0, column=3, padx=20)
-        e = tk.Entry(frame, width=5, validate='all', validatecommand=self.bar_e_check)
+        e = tk.Entry(self.first_bar_frame, width=5, validate='all', validatecommand=self.bar_e_check)
         e.grid(row=0, column=4, padx=20)
-        max_load = tk.Entry(frame, width=5, validate='all', validatecommand=self.bar_max_load_check)
+        max_load = tk.Entry(self.first_bar_frame, width=5, validate='all', validatecommand=self.bar_max_load_check)
         max_load.grid(row=0, column=5, padx=20)
 
-        add_button = tk.Button(frame, text="+", command=lambda: self.add_bar_row(frame), width=2)
+        add_button = tk.Button(self.first_bar_frame, text="+", command=lambda: self.add_bar_row(self.first_bar_frame), width=2)
         add_button.grid(row=0, column=6)
 
-        remove_button = tk.Button(frame, text="-", command=lambda: self.delete_bar_row(frame), width=2)
+        remove_button = tk.Button(self.first_bar_frame, text="-", command=lambda: self.delete_bar_row(self.first_bar_frame), width=2)
         remove_button.grid(row=0, column=7)
 
-        self.bar_entries.append((frame, bar_label))
+        self.bar_entries.append((self.first_bar_frame, bar_label))
         self.bar_input_data.append({
             'first_node': first_node,
             'second_node': second_node,
@@ -276,7 +291,7 @@ class SaprApp:
         index = self.get_bar_row_index(row_frame)
         self.create_bar_row_at_index(index + 1)
 
-    def create_bar_row_at_index(self, index):
+    def create_bar_row_at_index(self, index, node1_val=None, node2_val=None, a_val=None, e_val=None, max_load_val=None):
         frame = tk.Frame(self.scrollable_bar_frame)
         frame.grid(row=index + 1, column=0, columnspan=8, pady=2, sticky="ew")
 
@@ -294,6 +309,17 @@ class SaprApp:
         max_load = tk.Entry(frame, width=5, validate='all', validatecommand=self.bar_max_load_check)
         max_load.grid(row=0, column=5, padx=20)
 
+        if node1_val is not None:
+            first_node.insert(0, node1_val)
+        if node2_val is not None:
+            second_node.insert(0, node2_val)
+        if a_val is not None:
+            a.insert(0, a_val)
+        if e_val is not None:
+            e.insert(0, e_val)
+        if max_load_val is not None:
+            max_load.insert(0, max_load_val)
+
         add_button = tk.Button(frame, text="+", command=lambda: self.add_bar_row(frame), width=2)
         add_button.grid(row=0, column=6)
 
@@ -309,6 +335,11 @@ class SaprApp:
             'max_load': max_load
         })
         self.refresh_bar_grid()
+
+    def fill_bars(self):
+        for idx, node_dict in enumerate(self.user_input["bars"]):
+            self.create_bar_row_at_index(idx+1, node_dict["first_node"], node_dict["second_node"], node_dict["a"], node_dict["e"], node_dict["max_load"])
+        self.delete_bar_row(self.first_bar_frame)
 
     def delete_bar_row(self, row_frame):
         if len(self.bar_entries) == 1:
@@ -397,22 +428,22 @@ class SaprApp:
     def create_conc_load_row(self):
         row_index = len(self.conc_load_entries) + 1
 
-        row_frame = tk.Frame(self.scrollable_conc_frame)
-        row_frame.grid(row=row_index, column=0, columnspan=4, pady=2)
+        self.first_conc_load_frame = tk.Frame(self.scrollable_conc_frame)
+        self.first_conc_load_frame.grid(row=row_index, column=0, columnspan=4, pady=2)
 
-        node_num = tk.Entry(row_frame, width=5, validate='all', validatecommand=self.node_check)
+        node_num = tk.Entry(self.first_conc_load_frame, width=5, validate='all', validatecommand=self.node_check)
         node_num.grid(row=0, column=0, padx=15)
 
-        conc_load = tk.Entry(row_frame, width=5, validate='all', validatecommand=self.loads_check)
+        conc_load = tk.Entry(self.first_conc_load_frame, width=5, validate='all', validatecommand=self.loads_check)
         conc_load.grid(row=0, column=1, padx=15)
 
-        add_button = tk.Button(row_frame, text="+", command=lambda: self.add_conc_load_row(row_frame), width=2)
+        add_button = tk.Button(self.first_conc_load_frame, text="+", command=lambda: self.add_conc_load_row(self.first_conc_load_frame), width=2)
         add_button.grid(row=0, column=2)
 
-        delete_button = tk.Button(row_frame, text="-", command=lambda: self.delete_conc_load_row(row_frame), width=2)
+        delete_button = tk.Button(self.first_conc_load_frame, text="-", command=lambda: self.delete_conc_load_row(self.first_conc_load_frame), width=2)
         delete_button.grid(row=0, column=3)
 
-        self.conc_load_entries.append(row_frame)
+        self.conc_load_entries.append(self.first_conc_load_frame)
         self.conc_load_input_data.append({
             "node_num": node_num,
             "conc_load": conc_load
@@ -423,7 +454,7 @@ class SaprApp:
         index = self.get_conc_load_row_index(row_frame)
         self.create_conc_row_at_index(index + 1)
 
-    def create_conc_row_at_index(self, index):
+    def create_conc_row_at_index(self, index, node_val=None, conc_load_val=None):
         row_frame = tk.Frame(self.scrollable_conc_frame)
         row_frame.grid(row=index + 1, column=0, columnspan=4, pady=2)
 
@@ -432,6 +463,11 @@ class SaprApp:
 
         conc_load = tk.Entry(row_frame, width=5, validate='all', validatecommand=self.loads_check)
         conc_load.grid(row=0, column=1, padx=15)
+
+        if node_val is not None:
+            node_num.insert(0, node_val)
+        if conc_load_val is not None:
+            conc_load.insert(0, conc_load_val)
 
         add_button = tk.Button(row_frame, text="+", command=lambda: self.add_conc_load_row(row_frame), width=2)
         add_button.grid(row=0, column=2)
@@ -445,6 +481,11 @@ class SaprApp:
             "conc_load": conc_load
         })
         self.refresh_conc_load_grid()
+
+    def fill_conc_load(self):
+        for idx, conc_dict in enumerate(self.user_input["conc_loads"]):
+            self.create_conc_row_at_index(idx+1, conc_dict["node_num"], conc_dict["conc_load"])
+        self.delete_conc_load_row(self.first_conc_load_frame)
 
     def delete_conc_load_row(self, row_frame):
         if len(self.conc_load_entries) == 1:
@@ -486,22 +527,22 @@ class SaprApp:
     def create_dist_load_row(self):
         row_index = len(self.dist_load_entries) + 1
 
-        row_frame = tk.Frame(self.scrollable_dist_frame)
-        row_frame.grid(row=row_index, column=0, columnspan=4, pady=2)
+        self.first_dist_load_frame = tk.Frame(self.scrollable_dist_frame)
+        self.first_dist_load_frame.grid(row=row_index, column=0, columnspan=4, pady=2)
 
-        bar_num = tk.Entry(row_frame, width=5, validate='all', validatecommand=self.node_check)
+        bar_num = tk.Entry(self.first_dist_load_frame, width=5, validate='all', validatecommand=self.node_check)
         bar_num.grid(row=0, column=0, padx=15)
 
-        dist_load = tk.Entry(row_frame, width=5, validate='all', validatecommand=self.loads_check)
+        dist_load = tk.Entry(self.first_dist_load_frame, width=5, validate='all', validatecommand=self.loads_check)
         dist_load.grid(row=0, column=1, padx=15)
 
-        add_button = tk.Button(row_frame, text="+", command=lambda: self.add_dist_load_row(row_frame), width=2)
+        add_button = tk.Button(self.first_dist_load_frame, text="+", command=lambda: self.add_dist_load_row(self.first_dist_load_frame), width=2)
         add_button.grid(row=0, column=2)
 
-        delete_button = tk.Button(row_frame, text="-", command=lambda: self.delete_dist_load_row(row_frame), width=2)
+        delete_button = tk.Button(self.first_dist_load_frame, text="-", command=lambda: self.delete_dist_load_row(self.first_dist_load_frame), width=2)
         delete_button.grid(row=0, column=3)
 
-        self.dist_load_entries.append(row_frame)
+        self.dist_load_entries.append(self.first_dist_load_frame)
         self.dist_load_input_data.append({
             "bar_num": bar_num,
             "dist_load": dist_load
@@ -512,7 +553,7 @@ class SaprApp:
         index = self.get_dist_load_row_index(row_frame)
         self.create_dist_row_at_index(index + 1)
 
-    def create_dist_row_at_index(self, index):
+    def create_dist_row_at_index(self, index, bar_val=None, dist_load_val=None):
         row_frame = tk.Frame(self.scrollable_dist_frame)
         row_frame.grid(row=index + 1, column=0, columnspan=4, pady=2)
 
@@ -521,6 +562,11 @@ class SaprApp:
 
         dist_load = tk.Entry(row_frame, width=5, validate='all', validatecommand=self.loads_check)
         dist_load.grid(row=0, column=1, padx=15)
+
+        if bar_val is not None:
+            bar_num.insert(0, bar_val)
+        if dist_load_val is not None:
+            dist_load.insert(0, dist_load_val)
 
         add_button = tk.Button(row_frame, text="+", command=lambda: self.add_dist_load_row(row_frame), width=2)
         add_button.grid(row=0, column=2)
@@ -534,6 +580,11 @@ class SaprApp:
             "dist_load": dist_load
         })
         self.refresh_dist_load_grid()
+
+    def fill_dist_load(self):
+        for idx, dist_dict in enumerate(self.user_input["dist_loads"]):
+            self.create_dist_row_at_index(idx+1, dist_dict["bar_num"], dist_dict["dist_load"])
+        self.delete_dist_load_row(self.first_dist_load_frame)
 
     def delete_dist_load_row(self, row_frame):
         if len(self.dist_load_entries) == 1:
