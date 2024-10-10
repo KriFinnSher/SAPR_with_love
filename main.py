@@ -54,16 +54,13 @@ class SaprApp:
     def show_scheme(self):
         self.refresh()
         lengths = [float(val) for val in self.user_input["nodes"][1:]]
-        heights = [0] * len(self.bar_entries)
         nodes = [0] * len(self.node_entries)
         for i in range(1, len(self.node_entries)):
             nodes[i] = float(self.user_input["nodes"][i]) + nodes[i-1]
-        conc_loads = []
-        for conc_load in self.user_input["conc_loads"]:
-            conc_loads.append((conc_load["node_num"], float(conc_load["conc_load"]) > 0))
+        heights = [0] * len(self.bar_entries)
         for bar in self.user_input["bars"]:
             heights[int(bar["second_node"]) - 2] = float(bar["a"])
-        drawing.display_scheme(self.preview_canvas, lengths, heights, nodes, conc_loads, dist_loads=None)
+        drawing.display_scheme(self.preview_canvas, lengths, heights, self.user_input["bars"], nodes, self.user_input["conc_loads"], self.user_input["dist_loads"])
 
     def close(self):
         self.root.destroy()
@@ -359,7 +356,7 @@ class SaprApp:
         remove_button.grid(row=0, column=7)
 
         self.bar_entries.insert(index, (frame, bar_label))
-        self.bar_input_data.append({
+        self.bar_input_data.insert(index, {
             'first_node': first_node,
             'second_node': second_node,
             'a': a,
@@ -377,6 +374,7 @@ class SaprApp:
             return
 
         index = self.get_bar_row_index(row_frame)
+        # self.user_input["bars"].pop(index)
         self.bar_input_data.pop(index)
         self.bar_entries[index][0].grid_forget()
         self.bar_entries.pop(index)
@@ -508,7 +506,7 @@ class SaprApp:
         delete_button.grid(row=0, column=3)
 
         self.conc_load_entries.insert(index, row_frame)
-        self.conc_load_input_data.append({
+        self.conc_load_input_data.insert(index, {
             "node_num": node_num,
             "conc_load": conc_load
         })
@@ -606,7 +604,7 @@ class SaprApp:
         delete_button.grid(row=0, column=3)
 
         self.dist_load_entries.insert(index, row_frame)
-        self.dist_load_input_data.append({
+        self.dist_load_input_data.insert(index, {
             "bar_num": bar_num,
             "dist_load": dist_load
         })
