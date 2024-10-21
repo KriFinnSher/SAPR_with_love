@@ -1,7 +1,8 @@
 import tkinter as tk
 from tkinter import filedialog
+from tkinter import messagebox
 import validators
-from collections import defaultdict
+from collections import defaultdict, Counter
 import json
 import drawing
 
@@ -50,17 +51,121 @@ class SaprApp:
         self.get_bar_entries()
         self.get_conc_load_entries()
         self.get_dist_load_entries()
+        self.get_zadelki()
+
+    def input_is_correct(self):
+        correct = True
+        for bar in self.user_input["bars"]:
+            for val in bar:
+                if bar[val] == '':
+                    messagebox.showwarning("Ошибка ввода данных", "Присутствуют пустые поля в окне стержней")
+                    correct = False
+                    break
+
+        for node in self.user_input["nodes"]:
+            if node == '':
+                messagebox.showwarning("Ошибка ввода данных", "Присутствуют пустые поля в окне узлов")
+                correct = False
+                break
+
+        for conc_load in self.user_input["conc_loads"]:
+            for val in conc_load:
+                if conc_load[val] == '':
+                    messagebox.showwarning("Ошибка ввода данных",
+                                           "Присутствуют пустые поля в окне сосредоточенных нагрузок")
+                    correct = False
+                    break
+
+        for dist_load in self.user_input["dist_loads"]:
+            for val in dist_load:
+                if dist_load[val] == '':
+                    messagebox.showwarning("Ошибка ввода данных",
+                                           "Присутствуют пустые поля в окне распределенных нагрузок")
+                    correct = False
+                    break
+
+        if len(self.user_input["nodes"]) < 2:
+            messagebox.showwarning("Ошибка ввода данных",
+                                   "В схеме должно присутствовать минимум два узла")
+            correct = False
+
+        if not correct:
+            return False
+
+        created_nodes = set(range(1, len(self.user_input["nodes"]) + 1))
+        created_bars = set(range(1, len(self.user_input["nodes"])))
+        used_nodes = set()
+
+        for bar in self.user_input["bars"]:
+            if int(bar["first_node"]) not in created_nodes or int(bar["second_node"]) not in created_nodes:
+                messagebox.showwarning("Ошибка ввода данных",
+                                       "В окне стержней используются неуказанные узлы")
+                correct = False
+            used_nodes.add(int(bar["first_node"]))
+            used_nodes.add(int(bar["second_node"]))
+
+            if abs(int(bar["first_node"]) - int(bar["second_node"])) != 1:
+                messagebox.showwarning("Ошибка ввода данных",
+                                       "Каждый стержень должен находиться между соседних узлов")
+                correct = False
+
+        loads_num = 0
+        loads_nodes = []
+        for conc_load in self.user_input["conc_loads"]:
+            loads_nodes.append(int(conc_load["node_num"]))
+            if int(conc_load["node_num"]) not in created_nodes:
+                messagebox.showwarning("Ошибка ввода данных",
+                                       "В окне сосредоточенных нагрузок используются неуказанные узлы")
+                correct = False
+            if float(conc_load["conc_load"]) != 0:
+                loads_num += 1
+
+        if max(Counter(loads_nodes).values()) > 1:
+            messagebox.showwarning("Ошибка ввода данных",
+                                   "В каждом узле действует не более одной сосредоточенной нагрузки")
+            correct = False
+
+        loads_bars = []
+        for dist_load in self.user_input["dist_loads"]:
+            loads_bars.append(int(dist_load["bar_num"]))
+            if int(dist_load["bar_num"]) not in created_bars:
+                messagebox.showwarning("Ошибка ввода данных",
+                                       "В окне распределенных нагрузок используются неуказанные стержни")
+                correct = False
+            if float(dist_load["dist_load"]) != 0:
+                loads_num += 1
+
+        if max(Counter(loads_bars).values()) > 1:
+            messagebox.showwarning("Ошибка ввода данных",
+                                   "В каждом стержне действует не более одной распределенной нагрузки")
+            correct = False
+
+        if loads_num == 0:
+            messagebox.showwarning("Ошибка ввода данных",
+                                   "В схеме должна быть хотя бы одна ненулевая нагрузка")
+            correct = False
+
+        if len(created_nodes) > len(used_nodes):
+            messagebox.showwarning("Ошибка ввода данных",
+                                   "В схеме присутствуют неиспользованные узлы")
+            correct = False
+
+        return correct
 
     def show_scheme(self):
         self.refresh()
-        lengths = [float(val) for val in self.user_input["nodes"][1:]]
-        nodes = [0] * len(self.node_entries)
-        for i in range(1, len(self.node_entries)):
-            nodes[i] = float(self.user_input["nodes"][i]) + nodes[i-1]
-        heights = [0] * len(self.bar_entries)
-        for bar in self.user_input["bars"]:
-            heights[int(bar["second_node"]) - 2] = float(bar["a"])
-        drawing.display_scheme(self.preview_canvas, lengths, heights, self.user_input["bars"], nodes, self.user_input["conc_loads"], self.user_input["dist_loads"])
+        if self.input_is_correct():
+            lengths = [float(val) for val in self.user_input["nodes"][1:]]
+            nodes = [0] * len(self.node_entries)
+            for i in range(1, len(self.node_entries)):
+                nodes[i] = float(self.user_input["nodes"][i]) + nodes[i-1]
+            heights = [0] * len(self.bar_entries)
+
+            for bar in self.user_input["bars"]:
+                heights[max(int(bar["second_node"]), int(bar["first_node"])) - 2] = float(bar["a"])
+            drawing.display_scheme(self.preview_canvas, lengths, heights, self.user_input["bars"], nodes,
+                                   self.user_input["conc_loads"], self.user_input["dist_loads"],
+                                   self.user_input['left_zadelka'], self.user_input['right_zadelka'])
 
     def close(self):
         self.root.destroy()
@@ -300,10 +405,12 @@ class SaprApp:
         max_load = tk.Entry(self.first_bar_frame, width=5, validate='all', validatecommand=self.bar_max_load_check)
         max_load.grid(row=0, column=5, padx=20)
 
-        add_button = tk.Button(self.first_bar_frame, text="+", command=lambda: self.add_bar_row(self.first_bar_frame), width=2)
+        add_button = tk.Button(self.first_bar_frame, text="+",
+                               command=lambda: self.add_bar_row(self.first_bar_frame), width=2)
         add_button.grid(row=0, column=6)
 
-        remove_button = tk.Button(self.first_bar_frame, text="-", command=lambda: self.delete_bar_row(self.first_bar_frame), width=2)
+        remove_button = tk.Button(self.first_bar_frame, text="-",
+                                  command=lambda: self.delete_bar_row(self.first_bar_frame), width=2)
         remove_button.grid(row=0, column=7)
 
         self.bar_entries.append((self.first_bar_frame, bar_label))
@@ -367,14 +474,14 @@ class SaprApp:
 
     def fill_bars(self):
         for idx, node_dict in enumerate(self.user_input["bars"]):
-            self.create_bar_row_at_index(idx+1, node_dict["first_node"], node_dict["second_node"], node_dict["a"], node_dict["e"], node_dict["max_load"])
+            self.create_bar_row_at_index(idx+1, node_dict["first_node"], node_dict["second_node"],
+                                         node_dict["a"], node_dict["e"], node_dict["max_load"])
 
     def delete_bar_row(self, row_frame):
         if len(self.bar_entries) == 1:
             return
 
         index = self.get_bar_row_index(row_frame)
-        # self.user_input["bars"].pop(index)
         self.bar_input_data.pop(index)
         self.bar_entries[index][0].grid_forget()
         self.bar_entries.pop(index)
@@ -467,10 +574,12 @@ class SaprApp:
         conc_load = tk.Entry(self.first_conc_load_frame, width=5, validate='all', validatecommand=self.loads_check)
         conc_load.grid(row=0, column=1, padx=15)
 
-        add_button = tk.Button(self.first_conc_load_frame, text="+", command=lambda: self.add_conc_load_row(self.first_conc_load_frame), width=2)
+        add_button = tk.Button(self.first_conc_load_frame, text="+",
+                               command=lambda: self.add_conc_load_row(self.first_conc_load_frame), width=2)
         add_button.grid(row=0, column=2)
 
-        delete_button = tk.Button(self.first_conc_load_frame, text="-", command=lambda: self.delete_conc_load_row(self.first_conc_load_frame), width=2)
+        delete_button = tk.Button(self.first_conc_load_frame, text="-",
+                                  command=lambda: self.delete_conc_load_row(self.first_conc_load_frame), width=2)
         delete_button.grid(row=0, column=3)
 
         self.conc_load_entries.append(self.first_conc_load_frame)
@@ -565,10 +674,12 @@ class SaprApp:
         dist_load = tk.Entry(self.first_dist_load_frame, width=5, validate='all', validatecommand=self.loads_check)
         dist_load.grid(row=0, column=1, padx=15)
 
-        add_button = tk.Button(self.first_dist_load_frame, text="+", command=lambda: self.add_dist_load_row(self.first_dist_load_frame), width=2)
+        add_button = tk.Button(self.first_dist_load_frame, text="+",
+                               command=lambda: self.add_dist_load_row(self.first_dist_load_frame), width=2)
         add_button.grid(row=0, column=2)
 
-        delete_button = tk.Button(self.first_dist_load_frame, text="-", command=lambda: self.delete_dist_load_row(self.first_dist_load_frame), width=2)
+        delete_button = tk.Button(self.first_dist_load_frame, text="-",
+                                  command=lambda: self.delete_dist_load_row(self.first_dist_load_frame), width=2)
         delete_button.grid(row=0, column=3)
 
         self.dist_load_entries.append(self.first_dist_load_frame)
@@ -664,10 +775,12 @@ class SaprApp:
         self.left_zad = tk.IntVar(value=1)
         self.right_zad = tk.IntVar(value=0)
 
-        left_zadelka = tk.Checkbutton(self.preview_frame, variable=self.left_zad, text="слева", command=lambda: self.on_check("cb1"))
+        left_zadelka = tk.Checkbutton(self.preview_frame, variable=self.left_zad, text="слева",
+                                      command=lambda: self.on_check("cb1"))
         left_zadelka.grid(row=0, column=5, sticky='w')
 
-        right_zadelka = tk.Checkbutton(self.preview_frame, variable=self.right_zad, text="справа", command=lambda: self.on_check("cb2"))
+        right_zadelka = tk.Checkbutton(self.preview_frame, variable=self.right_zad, text="справа",
+                                       command=lambda: self.on_check("cb2"))
         right_zadelka.grid(row=0, column=5, sticky='e', padx=10)
 
     def on_check(self, sender_widget):
@@ -676,6 +789,13 @@ class SaprApp:
                 self.right_zad.set(1)
             elif sender_widget == 'cb2':
                 self.left_zad.set(1)
+
+        self.user_input['left_zadelka'] = [1] if self.left_zad.get() else [0]
+        self.user_input['right_zadelka'] = [1] if self.right_zad.get() else [0]
+
+    def get_zadelki(self):
+        self.user_input['left_zadelka'] = [1] if self.left_zad.get() else [0]
+        self.user_input['right_zadelka'] = [1] if self.right_zad.get() else [0]
 
     def initialize_postprocess_section(self):
         build_tables_button = tk.Button(self.postprocess_frame, text="Построение таблиц", width=30)
