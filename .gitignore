@@ -1,5 +1,6 @@
-/test.py
+/temp_dir/test.py
 /tests.py
+/main.spec
 
 venv/
 .env/
@@ -8,3 +9,4 @@ venv/
 __pycache__/
 
 .ipynb_checkpoints/
+/PreProcessor/tests.py
