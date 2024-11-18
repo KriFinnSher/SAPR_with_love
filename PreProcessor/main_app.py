@@ -3,7 +3,10 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 from PreProcessor import validators, drawing, scaler, input_checker
+from Processor import main_processing
 from collections import defaultdict
+from tkinter import messagebox
+from PostProcessor import tables
 
 
 
@@ -784,7 +787,7 @@ class SaprApp:
 
 
     def initialize_postprocess_section(self):
-        build_tables_button = tk.Button(self.postprocess_frame, text="Построение таблиц", width=30)
+        build_tables_button = tk.Button(self.postprocess_frame, text="Построение таблиц", width=30, command=self.show_tables)
         build_tables_button.pack(pady=15)
         build_tables_button.configure(bg="#f5d4a4", activebackground='#f7ce92')
 
@@ -796,10 +799,91 @@ class SaprApp:
         build_diagrams_button.pack(pady=15)
         build_diagrams_button.configure(bg="#f5d4a4", activebackground='#f7ce92')
 
-        section_analysis_button = tk.Button(self.postprocess_frame, text="Анализ сечения", width=30)
+        section_analysis_button = tk.Button(self.postprocess_frame, text="Анализ сечения", width=30, command=self.section_calc_window)
         section_analysis_button.pack(pady=15)
         section_analysis_button.configure(bg="#f5d4a4", activebackground='#f7ce92')
 
         generate_file_button = tk.Button(self.postprocess_frame, text="Сформировать файл", width=30)
         generate_file_button.pack(pady=15)
         generate_file_button.configure(bg="#f5d4a4", activebackground='#f7ce92')
+
+    def section_calc_window(self):
+        window = tk.Tk()
+        window.title("Ввод данных")
+
+        rat_pos_checker = (window.register(validators.rational_positive_number), '%P')
+        nat_pos_checker = (window.register(validators.natural_positive_number), '%P')
+
+        window.geometry("220x170")
+
+        window.resizable(False, False)
+
+        label1 = tk.Label(window, text="№ стержня:")
+        label1.grid(row=0, column=0, padx=5, pady=5)
+
+        self.bar_num = tk.Entry(window, width=5, validate='all', validatecommand=nat_pos_checker)
+        self.bar_num.grid(row=0, column=1, padx=10, pady=5)
+
+        label2 = tk.Label(window, text="x:")
+        label2.grid(row=0, column=2, padx=11, pady=5)
+
+        self.x = tk.Entry(window, width=5, validate='all', validatecommand=rat_pos_checker)
+        self.x.grid(row=0, column=3, padx=5, pady=5)
+
+        button = tk.Button(window, text="Рассчитать", command=self.section_calc)
+        button.grid(row=1, column=0, columnspan=4, pady=10)
+
+        res_label = tk.Label(window, text="Результаты:")
+        res_label.grid(row=2, column=0, padx=5, pady=5)
+
+        self.u_label = tk.Label(window, text="U(x) = -")
+        self.u_label.grid(row=2, column=1, columnspan=2, padx=5, pady=5)
+
+        self.n_label = tk.Label(window, text="N(x) = -")
+        self.n_label.grid(row=3, column=1, columnspan=2, padx=5, pady=5)
+
+        self.sigma_label = tk.Label(window, text="σ(x) = -")
+        self.sigma_label.grid(row=4, column=1, columnspan=2, padx=5, pady=5)
+
+        self.window = window
+
+    def section_calc(self):
+        self.refresh()
+        data = self.user_input
+        if input_checker.input_is_correct(data):
+            if self.x.get() == '' or self.bar_num.get() == '':
+                messagebox.showwarning("Ошибка ввода данных", "Заполните оба поля в окне")
+                return
+            else:
+                if not (1 <= int(self.bar_num.get()) <= len(self.user_input['bars'])):
+                    messagebox.showwarning("Ошибка ввода данных", "Указан несуществующий стержень")
+                    return
+
+                x = float(self.x.get())
+                bar_num = int(self.bar_num.get())
+                l = int(data['nodes'][bar_num])
+
+                if not (0 <= x <= l):
+                    messagebox.showwarning("Ошибка ввода данных", "Координата x должна быть в пределах стержня")
+                    return
+
+                u, n, sigma = main_processing.section_calc(self)
+
+                self.u_label.config(text=f"U(x) = {u}")
+                self.n_label.config(text=f"N(x) = {n}")
+
+                sigma_max = next((float(bar['max_load']) for bar in data['bars'] if
+                                  min(int(bar['first_node']), int(bar['second_node'])) == bar_num), 0)
+                if abs(sigma) > abs(sigma_max):
+                    self.sigma_label.config(text=f"σ(x) = {sigma}", fg='red')
+                else:
+                    self.sigma_label.config(text=f"σ(x) = {sigma}")
+
+
+    def show_tables(self):
+        self.refresh()
+        data = self.user_input
+
+        if input_checker.input_is_correct(data):
+            tables.display_tables(self)
+
