@@ -1,8 +1,7 @@
 import tkinter as tk
-from PreProcessor import main_app
-
+from PreProcessor.Sections import MainWindow
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = main_app.SaprApp(root)
+    app = MainWindow.SaprApp(root)
     root.mainloop()

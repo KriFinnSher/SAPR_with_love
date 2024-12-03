@@ -9,6 +9,6 @@ venv/
 __pycache__/
 
 .ipynb_checkpoints/
-/PreProcessor/tests.py
+/temp_dir/tests.py
 /build/
 /dist/
